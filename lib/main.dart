@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:signalr_core/signalr_core.dart';
+import 'package:sms/sms.dart';
 
 void main() => runApp(MyApp());
 
@@ -40,6 +41,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     super.initState();
     startConnection();
+    listenForSms();
   }
 
   void startConnection() async {
@@ -49,6 +51,13 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       verbonden = '';
     });
+  }
+
+  void listenForSms() {
+    SmsReceiver receiver = new SmsReceiver();
+    receiver.onSmsReceived.listen((SmsMessage msg) => {
+          connection.invoke("SendSMS", args: [msg.body])
+        });
   }
 
   void _incrementCounter() {
