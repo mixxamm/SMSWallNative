@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:signalr_core/signalr_core.dart';
 import 'package:sms/sms.dart';
+import 'scanner.dart';
 
 void main() => runApp(MyApp());
 
@@ -8,7 +9,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'SMSWall',
       theme: ThemeData(
         primarySwatch: Colors.red,
       ),
@@ -28,6 +29,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
+  String sessie = '';
   String verbonden = ' niet';
   final connection = HubConnectionBuilder()
       .withUrl(
@@ -56,13 +58,21 @@ class _MyHomePageState extends State<MyHomePage> {
   void listenForSms() {
     SmsReceiver receiver = new SmsReceiver();
     receiver.onSmsReceived.listen((SmsMessage msg) => {
-          connection.invoke("SendSMS", args: [msg.body])
+          connection.invoke("SendSMS", args: [msg.body, sessie])
         });
   }
 
   void _incrementCounter() {
     setState(() {
       _counter++;
+    });
+  }
+
+  void verbindMetSessie() async {
+    final sessieCode = await Navigator.push(
+        context, MaterialPageRoute(builder: (context) => Scanner()));
+    setState(() {
+      sessie = sessieCode;
     });
   }
 
@@ -79,6 +89,12 @@ class _MyHomePageState extends State<MyHomePage> {
             Text(
               'U bent$verbonden verbonden met de server.',
             ),
+            MaterialButton(
+              color: sessie == '' ? Colors.red : Colors.green,
+              child: Text((sessie == '' ? 'Verbind' : 'Verbonden') +
+                  ' met sessie $sessie'),
+              onPressed: () => verbindMetSessie(),
+            )
           ],
         ),
       ), // This trailing comma makes auto-formatting nicer for build methods.

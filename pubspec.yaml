@@ -21,6 +21,7 @@ dependencies:
     sdk: flutter
   signalr_core: ^1.0.4
   sms: ^0.2.4
+  qr_code_scanner: ^0.0.13
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
