@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:signalr_core/signalr_core.dart';
 import 'package:sms/sms.dart';
 import 'scanner.dart';
+import 'dart:convert';
 
 void main() => runApp(MyApp());
 
@@ -30,28 +31,31 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
   String sessie = '';
+  String verbondenUrl = '';
   String verbonden = ' niet';
-  final connection = HubConnectionBuilder()
-      .withUrl(
-          'http://10.0.2.2:49368/smshub',
-          HttpConnectionOptions(
-            logging: (level, message) => print(message),
-          ))
-      .build();
+  var connection;
 
   @override
   void initState() {
     super.initState();
-    startConnection();
     listenForSms();
   }
 
-  void startConnection() async {
+  void startConnection(String url) async {
+    print(url);
+    connection = HubConnectionBuilder()
+        .withUrl(
+            url,
+            HttpConnectionOptions(
+              logging: (level, message) => print(message),
+            ))
+        .build();
     print('verbinding maken');
     await connection.start();
     print('verbinding gemaakt');
     setState(() {
       verbonden = '';
+      verbondenUrl = url;
     });
   }
 
@@ -69,10 +73,13 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void verbindMetSessie() async {
-    final sessieCode = await Navigator.push(
+    var sessieCode = await Navigator.push(
         context, MaterialPageRoute(builder: (context) => Scanner()));
+    sessieCode = jsonDecode(sessieCode);
+    print(sessieCode);
+    startConnection(sessieCode['url']);
     setState(() {
-      sessie = sessieCode;
+      sessie = sessieCode['sessie'];
     });
   }
 
@@ -94,7 +101,11 @@ class _MyHomePageState extends State<MyHomePage> {
               child: Text((sessie == '' ? 'Verbind' : 'Verbonden') +
                   ' met sessie $sessie'),
               onPressed: () => verbindMetSessie(),
-            )
+            ),
+            Text(
+              '$verbondenUrl',
+              style: TextStyle(fontWeight: FontWeight.w100),
+            ),
           ],
         ),
       ), // This trailing comma makes auto-formatting nicer for build methods.
