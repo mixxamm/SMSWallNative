@@ -1,0 +1,8 @@
+{
+  "not": "niet ",
+  "uBentVerbondenMetDeServer": "U bent {verbonden}verbonden met de server.",
+  "connect": "Verbind",
+  "connected": "Verbonden",
+  "withSession": " met sessie {session}",
+  "scanAnSmsWallQrcode": "Scan een SMSWall QR-code"
+}

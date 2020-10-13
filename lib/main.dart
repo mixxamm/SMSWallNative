@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:signalr_core/signalr_core.dart';
 import 'package:sms/sms.dart';
+import 'package:smswall/generated/l10n.dart';
 import 'scanner.dart';
 import 'dart:convert';
 
@@ -10,6 +12,12 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      localizationsDelegates: [
+        S.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ],
+      supportedLocales: S.delegate.supportedLocales,
       title: 'SMSWall',
       theme: ThemeData(
         primarySwatch: Colors.red,
@@ -30,9 +38,9 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
-  String sessie = '';
-  String verbondenUrl = '';
-  String verbonden = ' niet';
+  String session = '';
+  String connectedUrl = '';
+  String connected = S.current.not;
   var connection;
 
   @override
@@ -50,19 +58,17 @@ class _MyHomePageState extends State<MyHomePage> {
               logging: (level, message) => print(message),
             ))
         .build();
-    print('verbinding maken');
     await connection.start();
-    print('verbinding gemaakt');
     setState(() {
-      verbonden = '';
-      verbondenUrl = url;
+      connected = '';
+      connectedUrl = url;
     });
   }
 
   void listenForSms() {
     SmsReceiver receiver = new SmsReceiver();
     receiver.onSmsReceived.listen((SmsMessage msg) => {
-          connection.invoke("SendSMS", args: [msg.body, sessie])
+          connection.invoke("SendSMS", args: [msg.body, session])
         });
   }
 
@@ -79,7 +85,7 @@ class _MyHomePageState extends State<MyHomePage> {
     print(sessieCode);
     startConnection(sessieCode['url']);
     setState(() {
-      sessie = sessieCode['sessie'];
+      session = sessieCode['sessie'];
     });
   }
 
@@ -94,16 +100,18 @@ class _MyHomePageState extends State<MyHomePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             Text(
-              'U bent$verbonden verbonden met de server.',
+              S.of(context).uBentVerbondenMetDeServer(connected),
             ),
             MaterialButton(
-              color: sessie == '' ? Colors.red : Colors.green,
-              child: Text((sessie == '' ? 'Verbind' : 'Verbonden') +
-                  ' met sessie $sessie'),
+              color: session == '' ? Colors.red : Colors.green,
+              child: Text((session == ''
+                      ? S.of(context).connect
+                      : S.of(context).connected) +
+                  S.of(context).withSession(session)),
               onPressed: () => verbindMetSessie(),
             ),
             Text(
-              '$verbondenUrl',
+              '$connectedUrl',
               style: TextStyle(fontWeight: FontWeight.w100),
             ),
           ],

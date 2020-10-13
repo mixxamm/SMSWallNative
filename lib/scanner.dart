@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
+import 'package:smswall/generated/l10n.dart';
 
 class Scanner extends StatefulWidget {
   @override
@@ -26,7 +27,7 @@ class _ScannerState extends State<Scanner> {
           Expanded(
             flex: 1,
             child: Center(
-              child: Text('Scan een SMSWall QR-code'),
+              child: Text(S.of(context).scanAnSmsWallQrcode),
             ),
           )
         ],
