@@ -1,10 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:signalr_core/signalr_core.dart';
-import 'package:sms/sms.dart';
+import 'package:telephony/telephony.dart';
 import 'package:smswall/generated/l10n.dart';
 import 'scanner.dart';
 import 'dart:convert';
+
+var connection;
+
+backgroundMessageHandler(SmsMessage message) async {
+  print('received in background');
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  if (prefs.getString("session") != "") {
+    var sessieCode = jsonDecode(prefs.getString("session"));
+    print(sessieCode);
+    await startConnection(sessieCode['url']);
+    connection.invoke('SendSMS', args: [message.body, sessieCode['sessie']]);
+  }
+}
+
+Future<String> startConnection(String url) async {
+  print(url);
+  connection = HubConnectionBuilder()
+      .withUrl(
+          url,
+          HttpConnectionOptions(
+            logging: (level, message) => print(message),
+          ))
+      .build();
+  await connection.start();
+  return url;
+}
 
 void main() => runApp(MyApp());
 
@@ -37,39 +64,37 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  final Telephony telephony = Telephony.instance;
   int _counter = 0;
   String session = '';
   String connectedUrl = '';
   String connected = S.current.not;
-  var connection;
 
   @override
   void initState() {
     super.initState();
-    listenForSms();
+    startSmsService();
   }
 
-  void startConnection(String url) async {
-    print(url);
-    connection = HubConnectionBuilder()
-        .withUrl(
-            url,
-            HttpConnectionOptions(
-              logging: (level, message) => print(message),
-            ))
-        .build();
-    await connection.start();
-    setState(() {
-      connected = '';
-      connectedUrl = url;
-    });
+  void startSmsService() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool permissionsGranted = await telephony.requestPhoneAndSmsPermissions;
+    if (permissionsGranted)
+      listenForSms();
+    else {
+      // nog handlen
+    }
+    if (prefs.getString("session") != "") {
+      connectWithSessionCode(prefs.getString("session"));
+    }
   }
 
   void listenForSms() {
-    SmsReceiver receiver = new SmsReceiver();
-    receiver.onSmsReceived.listen((SmsMessage msg) => {
-          connection.invoke("SendSMS", args: [msg.body, session])
-        });
+    telephony.listenIncomingSms(
+        onNewMessage: (SmsMessage message) {
+          connection.invoke("SendSMS", args: [message.body, session]);
+        },
+        onBackgroundMessage: backgroundMessageHandler);
   }
 
   void _incrementCounter() {
@@ -81,9 +106,19 @@ class _MyHomePageState extends State<MyHomePage> {
   void verbindMetSessie() async {
     var sessieCode = await Navigator.push(
         context, MaterialPageRoute(builder: (context) => Scanner()));
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setString("session", sessieCode);
+    connectWithSessionCode(sessieCode);
+  }
+
+  void connectWithSessionCode(sessieCode) async {
     sessieCode = jsonDecode(sessieCode);
     print(sessieCode);
-    startConnection(sessieCode['url']);
+    String url = await startConnection(sessieCode['url']);
+    setState(() {
+      connected = '';
+      connectedUrl = url;
+    });
     setState(() {
       session = sessieCode['sessie'];
     });
